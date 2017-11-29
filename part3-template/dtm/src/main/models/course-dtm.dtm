@@ -14,6 +14,7 @@ entity Person{
     Set(TeachRequest) courseRequests oppositeTo ta
 
     Set(Course) administers oppositeTo professor
+    Set(View) views oppositeTo viewOwner
 
 }
 
@@ -52,6 +53,19 @@ entity TeachRequest{
     Course course oppositeTo taRequests
 }
 
+entity View{
+    String name
+    Person viewOwner oppositeTo views
+    Set(Filter) filters oppositeTo filterView
+}
+
+entity Filter{
+    Attribute attribute
+    Rule rule
+    String filterParameter
+    View filterView oppositeTo filters
+}
+
 enum Role{
     STUDENT
     STAFF
@@ -60,4 +74,21 @@ enum Role{
     ADMIN
 }
 
-//TODO: Add additional entities and enums here
+enum Attribute{
+    COURSE_NAME
+    PROF_NAME //PROF NAME AND SURNAME
+    DEPT_NAME
+    N_ATT_STUD
+    N_AVAIL_STUD
+    N_TA
+    N_AVAIL_TA
+}
+
+enum Rule{
+    EQ
+    GEQ
+    GR
+    LEQ
+    LE
+    DIFF
+}
