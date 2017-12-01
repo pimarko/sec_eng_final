@@ -1,73 +1,269 @@
 Window Filter{
-
+    Set(Course) filteredCourses := [Course.allInstances()]
     Table Table_T{
-        //TODO: show filtered courses
-        //NOTE: 'Role' below added for compilation purposes
-        //      replace it with the appropriate type
-        Set(Role) rows 
-        Role selected
+        Set(Course) rows := [Filter.filteredCourses$] 
+        Course selected  := [null]
         columns {
             ['Name'] : Label name {
                 event onView (text){
-                    //TODO: show the course name
+                    try{
+                        text := [$Table_T.row$.name]
+                    } catch (SecurityException){
+                        text := ['RESTRICTED']
+                    }
                 }
             }
             ['Professor'] : Label prof {
                 event onView (text){
-                    //TODO: show the course professor's name and surname
+                    try{
+                        text := [$Table_T.row$.professor.name.concat(' ').concat($Table_T.row$.professor.surname)]
+                    } catch (SecurityException){
+                        text := ['RESTRICTED']
+                    }
                 }
             }
             ['Department'] : Label dept {
                 event onView (text){
-                    //TODO: show the course department
+                    try{
+                        text := [$Table_T.row$.belongingTo.name]
+                    } catch (SecurityException){
+                        text := ['RESTRICTED']
+                    }
                 }
             }
             ['Current students no'] : Label students {
                 event onView (text){
-                    //TODO: show the current number of students in the course
+                     try{
+                        text := [$Table_T.row$.currStudents->size().toString()]
+                    } catch (SecurityException){
+                        text := ['RESTRICTED']
+                    }
                 }
             }
             ['Available student places'] : Label limit {
                 event onView (text){
-                    //TODO: show the current available student places in the course 
+                    try{
+                        text := [($Table_T.row$.maxCapacity - $Table_T.row$.currStudents->size()).toString()]
+                    } catch (SecurityException){
+                        text := ['RESTRICTED']
+                    }
                 }
             }
             ['Current TA no'] : Label ta {
                 event onView (text){
-                    //TODO: show the current number of TAs in the course 
+                    try{
+                        text := [($Table_T.row$.staff->size() - 1).toString()]
+                    } catch (SecurityException){
+                        text := ['RESTRICTED']
+                    }
+                    
                 }
             }
             ['Available TA places'] : Label talimit {
                 event onView (text){
-                    //TODO: show the current available TA places in the course 
+                     try{
+                        text := [(($Table_T.row$.maxCapacity/20).floor() - ($Table_T.row$.staff->size() - 1)).toString()]
+                    } catch (SecurityException){
+                        text := ['RESTRICTED']
+                    }
                 }
             }
         }
     }
     ComboBox View_CB {
-        //TODO: show existing views to choose from
-        //NOTE: 'Role' below added for compilation purposes
-        //      replace it with the appropriate type
-        Set(Role) rows 
-        Role selected
+	Set(View) rows := [View.allInstances()]
+        View selected  := [null]
         Label views { 
             event onView (text) {
-                //TODO: show view
+                try{
+                    text := [$View_CB.row$.name] 
+                } catch (SecurityException){
+                    text := ['RESTRICTED']
+                }
             }
         }
     }
     Button Apply_B{
         String text := ['Apply view']
+        View selected_view
+        Set(Filter) filters
         event onClick{
-            //TODO: filter the list of courses according to the selected view
-            notification(['Error'],['Not implemented'],[500])        
+            if[(not $View_CB.selected$.oclIsUndefined())]{
+                //only admin could have come to the views anyway, but let's do the double check 
+                if [$Filter.caller$.role=Role::ADMIN]{
+                    try{
+                        selected_view := [$View_CB.selected$]
+                        filters := [$selected_view$.filters]
+                        foreach filter in [$filters$] {
+                            //course name filtering
+                            if[($filter$.attribute) = Attribute::COURSE_NAME]{
+                                if[($filter$.rule) = Rule::EQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.name = $filter$.filterParameter)]
+                                }
+                                 if[($filter$.rule) = Rule::DIFF]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.name <> $filter$.filterParameter)]
+                                }
+                            }
+                            //prof name filtering
+                            if[($filter$.attribute) = Attribute::PROF_NAME]{
+                                if[($filter$.rule) = Rule::EQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.professor.name.concat(' ').concat(c.professor.surname) = $filter$.filterParameter)]
+                                }
+                                 if[($filter$.rule) = Rule::DIFF]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.professor.name.concat(' ').concat(c.professor.surname) <> $filter$.filterParameter)]
+                                }
+                            }
+                            //dept name filtering
+                            if[($filter$.attribute) = Attribute::DEPT_NAME]{
+                                if[($filter$.rule) = Rule::EQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.belongingTo.name = $filter$.filterParameter)]
+                                }
+                                 if[($filter$.rule) = Rule::DIFF]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.belongingTo.name <> $filter$.filterParameter)]
+                                }
+                            }
+                            //n_att_stud filtering
+                            if[($filter$.attribute) = Attribute::N_ATT_STUD]{
+                                if[($filter$.rule) = Rule::EQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.currStudents->size() = $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::DIFF]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.currStudents->size() <> $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::GEQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.currStudents->size() >= $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::GR]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.currStudents->size() > $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::LEQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.currStudents->size() <= $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::LE]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | c.currStudents->size() < $filter$.filterParameter.toInteger())]
+                                }                               
+                            }
+                            //n_avail_stud filtering
+                            if[($filter$.attribute) = Attribute::N_AVAIL_STUD]{
+                                if[($filter$.rule) = Rule::EQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.maxCapacity - c.currStudents->size()) = $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::DIFF]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.maxCapacity - c.currStudents->size()) <> $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::GEQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.maxCapacity - c.currStudents->size()) >= $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::GR]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.maxCapacity - c.currStudents->size()) > $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::LEQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.maxCapacity - c.currStudents->size()) <= $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::LE]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.maxCapacity - c.currStudents->size()) < $filter$.filterParameter.toInteger())]
+                                }                               
+                            }
+                              //n_ta filtering
+                            if[($filter$.attribute) = Attribute::N_TA]{
+                                if[($filter$.rule) = Rule::EQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.staff->size() - 1) = $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::DIFF]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.staff->size() - 1) <> $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::GEQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.staff->size() - 1) >= $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::GR]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.staff->size() - 1) > $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::LEQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.staff->size() - 1) <= $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::LE]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | (c.staff->size() - 1) < $filter$.filterParameter.toInteger())]
+                                }                               
+                            }
+                               //n_avail_ta filtering
+                            if[($filter$.attribute) = Attribute::N_AVAIL_TA]{
+                                if[($filter$.rule) = Rule::EQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | ((c.maxCapacity/20).floor() - (c.staff->size() - 1)) = $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::DIFF]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | ((c.maxCapacity/20).floor() - (c.staff->size() - 1)) <> $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::GEQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | ((c.maxCapacity/20).floor() - (c.staff->size() - 1)) >= $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::GR]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | ((c.maxCapacity/20).floor() - (c.staff->size() - 1)) > $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::LEQ]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | ((c.maxCapacity/20).floor() - (c.staff->size() - 1)) <= $filter$.filterParameter.toInteger())]
+                                }
+                                if[($filter$.rule) = Rule::LE]{
+                                    Filter.filteredCourses := [$Filter.filteredCourses$ -> 
+                                    select(c | ((c.maxCapacity/20).floor() - (c.staff->size() - 1)) < $filter$.filterParameter.toInteger())]
+                                }                               
+                            } 
+                        } 
+                        
+                        Table_T.rows := [null]
+                        reevaluate Table_T.rows
+                    } catch(SecurityException){
+                        notification(['Error'],['Not allowed'],[500])
+                    }
+                } else {
+                    notification(['Error'],['Not allowed'],[500])
+                }
+            } else {
+                notification(['Error'],['The form contains errors'],[500])
+            }    
         }
     }
     Button Edit_B{
         String text := ['Edit View']
         event onClick{
-            //TODO: open the View window to edit the selected view
-            notification(['Error'],['Not implemented'],[500])        
+            if[(not $View_CB.selected$.oclIsUndefined())]{
+                //only admin could have come to the views anyway, but let's do the double check 
+                if [$Filter.caller$.role=Role::ADMIN]{
+                    open View(caller:[$Filter.caller$], role:[$Filter.caller$.role], entity: [$View_CB.selected$])
+                } else {
+                    notification(['Error'],['Not allowed'],[500])
+                }
+            } else{
+                notification(['Error'],['The form contains errors'],[500])
+            }      
         }
     }
     Label Name_L{
@@ -79,8 +275,21 @@ Window Filter{
     Button Create_B{
         String text := ['Create View']
         event onClick{
-            //TODO: create a view with a name from the TF above
-            notification(['Error'],['Not implemented'],[500])        
+            if [(not $Name_TF.text$.oclIsUndefined()) and (not ($Name_TF.text$.size() = 0))] {
+                try{
+                    newEntity := new View
+                    [$newEntity$.name]:=[$Name_TF.text$]
+                    [$newEntity$.viewOwner] := [$Filter.caller$]
+                    notification(['Success'],['View created'],[500])
+                    View_CB.rows := [null]
+                    reevaluate View_CB.rows
+                    Name_TF.text := [null]
+                } catch(SecurityException){
+                    notification(['Error'],['Not allowed'],[500])        
+                }
+            } else {
+                notification(['Error'],['The form contains errors.'],[500])
+            }        
         }
     }
     Button Back_B{
