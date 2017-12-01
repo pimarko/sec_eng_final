@@ -1,4 +1,4 @@
-﻿role STUDENT {
+role STUDENT {
     Person{
          fullAccess
     }

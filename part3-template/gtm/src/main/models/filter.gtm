@@ -1,7 +1,7 @@
 Window Filter{
     Set(Course) filteredCourses := [Course.allInstances()]
     Table Table_T{
-        Set(Course) rows := [Filter.filteredCourses$] 
+        Set(Course) rows := [$Filter.filteredCourses$] 
         Course selected  := [null]
         columns {
             ['Name'] : Label name {
@@ -71,7 +71,7 @@ Window Filter{
         }
     }
     ComboBox View_CB {
-	Set(View) rows := [View.allInstances()]
+        Set(View) rows := [View.allInstances()]
         View selected  := [null]
         Label views { 
             event onView (text) {

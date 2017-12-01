@@ -1,5 +1,5 @@
 Window View{
-    Filter entity
+    View entity
     
     Label Name_L{
         String text := ['View Name:']
@@ -18,8 +18,8 @@ Window View{
         columns {
             ['Attribute'] : Label attr {
                 event onView (text){
-		    try{
-			text := [$Table_T.row$.attribute.name()]
+                try{
+                    text := [$Filters_T.row$.attribute.name()]
                     } catch (SecurityException){
                         text := ['RESTRICTED']
                     }
@@ -28,7 +28,7 @@ Window View{
             ['Operator'] : Label op {
                 event onView (text){
                     try{
-                        text := [$Table_T.row$.rule.name()]
+                        text := [$Filters_T.row$.rule.name()]
                     } catch (SecurityException){
                         text := ['RESTRICTED']
                     }
@@ -37,7 +37,7 @@ Window View{
             ['Parameter'] : Label param {
                 event onView (text){
                      try{
-                         text := [$Table_T.row$.filterParameter]
+                         text := [$Filters_T.row$.filterParameter]
                      } catch (SecurityException){
                          text := ['RESTRICTED']
                      }
@@ -50,7 +50,7 @@ Window View{
         event onClick{
             if [ (not $Filters_T.selected$.oclIsUndefined())]{
                 try{
-                    [$filterWindow.entity$.filters]-=[$Filters_T.selected$]
+                    [$View.entity$.filters]-=[$Filters_T.selected$]
                     delete [$Filters_T.selected$]
                     Filters_T.rows := [null]
                     reevaluate Filters_T.rows
@@ -110,14 +110,13 @@ Window View{
                     Op_CB.selected := [null]
                     Attribute_CB.selected := [null]
                     Filters_T.rows := [null]
-                    reevaluate Filter_T.rows
+                    reevaluate Filters_T.rows
                 } catch(SecurityException){
                     notification(['Error'],['Not allowed'],[500])        
                 }
             } else {
                 notification(['Error'],['Form contains errors.'],[500])
             }
-            notification(['Error'],['Not implemented'],[500])        
         }   
     }
     Button Back_B{
